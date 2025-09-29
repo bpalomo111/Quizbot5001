@@ -1,517 +1,552 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CSV Quiz</title>
-  <meta name="theme-color" content="#6d28d9">
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" sizes="192x192" href="./icon-192.png">
-  <link rel="apple-touch-icon" href="./icon-192.png">
-  <style>
-    :root{--bg:#f7f7fb;--card:#fff;--text:#0f172a;--muted:#6b7280;--brand:#6d28d9;--blue:#2563eb;--ring:#e5e7eb}
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial}
-    .wrap{max-width:1000px;margin:18px auto;padding:0 14px}
-    h1{margin:0 0 8px 0;font-weight:700}
-    .badge{font-size:12px;background:#f3f4f6;border-radius:999px;padding:5px 10px;color:#374151}
-    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
-    button{border:0;border-radius:10px;padding:10px 14px;background:#e5e7eb;cursor:pointer}
-    .blue{background:var(--blue);color:#fff}
-    .dark{background:#374151;color:#fff}
-    .card{background:var(--card);border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 30px rgba(0,0,0,.06);padding:16px}
-    #status{color:#6b7280;margin:6px 0}
-    #warning{color:#b91c1c;margin:6px 0}
-    #quiz{display:none}
-    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .spacer{flex:1}
-    .opt{background:#f9fafb;border:1px solid var(--ring);border-radius:12px;padding:12px;margin:10px 0;user-select:none}
-    .opt.disabled{opacity:.75;pointer-events:none}
-    .opt.correct{background:#ecfdf5;border-color:#34d399}
-    .opt.incorrect{background:#fef2f2;border-color:#fca5a5}
-    .opt.correct-faint{outline:1px dashed #34d399}
-    .opt.selected{outline:2px solid var(--blue)}
-    .muted{color:#6b7280;font-size:12px}
-    .progress{height:10px;border-radius:999px;background:#e5e7eb;position:relative}
-    .bar{position:absolute;top:0;left:0;height:100%;width:0;background:var(--blue)}
-    #submitMulti{display:none;margin-top:6px}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSV Quiz — Multi‑Answer Edition</title>
+<style>
+  :root{
+    --bg:#f7f7fb; --card:#ffffff; --text:#0f172a;
+    --muted:#6b7280; --brand:#6d28d9; --brand-2:#4f46e5;
+    --ok:#10b981; --warn:#f59e0b; --bad:#ef4444;
+    --ring:#d1d5db;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial;}
+  h1{font-size:28px;margin:16px 0 8px 0}
+  .wrap{max-width:1000px;margin:14px auto;padding:0 14px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 10px 0}
+  button{background:#e5e7eb;border:0;border-radius:10px;padding:10px 14px;cursor:pointer}
+  button.primary{background:var(--brand);color:#fff}
+  button.blue{background:#2563eb;color:#fff}
+  button.dark{background:#374151;color:#fff}
+  .card{background:var(--card);border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 30px rgba(0,0,0,.06);padding:16px}
+  #status{margin:6px 0 10px 0;color:var(--muted)}
+  #warning{color:#b91c1c;margin:6px 0 10px 0}
+  .badge{background:#f3f4f6;border-radius:999px;padding:4px 10px;font-size:12px;color:#374151}
+  #meta{display:flex;gap:10px;align-items:center;justify-content:flex-end}
+  #question{font-size:20px;margin:10px 0 14px 0}
+  .opt{background:#f9fafb;border:1px solid var(--ring);border-radius:12px;padding:14px;margin:10px 0;cursor:pointer;user-select:none}
+  .opt.disabled{pointer-events:none;opacity:.75}
+  .opt.correct{background:#ecfdf5;border-color:#34d399}
+  .opt.incorrect{background:#fef2f2;border-color:#fca5a5}
+  .opt.correct-faint{outline:1px dashed #34d399}
+  .opt.selected{outline:2px solid var(--brand-2)}
+  #feedback{display:none;margin-top:10px;padding:10px;border:1px solid #eee;border-radius:12px;background:#fff}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .spacer{flex:1}
+  .progress{height:10px;border-radius:999px;background:#e5e7eb;position:relative;overflow:hidden}
+  .bar{position:absolute;top:0;left:0;height:100%;width:0;background:var(--brand-2)}
+  #pct{font-size:12px;color:#6b7280}
+  /* chips */
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #ddd;border-radius:999px;background:#fff;font-size:12px}
+  .chip.green{background:#ecfdf5;color:#065f46;border-color:#34d399}
+  .chip.yellow{background:#fffbeb;color:#92400e;border-color:#fcd34d}
+  .chip.red{background:#fef2f2;color:#991b1b;border-color:#fca5a5}
+  .chkchip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #ddd;border-radius:999px;background:#fff}
+  .chkchip input{transform:scale(1.15)}
+  .muted{color:var(--muted);font-size:12px}
+</style>
 </head>
 <body>
   <div class="wrap">
-    <h1>CSV Quiz <span class="badge">Installable • Offline</span></h1>
-
+    <h1>CSV Quiz <span class="badge">Multi‑Answer</span></h1>
     <div class="toolbar">
       <input type="file" id="file" accept=".csv,text/csv">
+      <button id="shuffleBoth" class="primary">New Shuffle (Qs+Answers)</button>
       <button id="shuffleQs" class="blue">Shuffle Questions</button>
       <button id="reset" class="blue">Reset Progress</button>
+      <button id="toggleFilter" class="blue">Filter</button>
       <button id="hard" class="dark">Hard Reset</button>
     </div>
 
-    <!-- NEW: filters -->
-    <div id="filters" class="toolbar" style="display:none">
-      <select id="chapterFilter"></select>
-      <label class="muted"><input type="checkbox" id="unansweredOnly"> Unanswered only</label>
-    </div>
-
-    <div id="status" class="muted">Load a CSV to begin. (Progress autosaves offline.)</div>
+    <div id="status" class="muted">Load a CSV to begin.</div>
     <div id="warning"></div>
 
-    <div id="quiz" class="card">
+    <!-- Filter Panel -->
+    <section id="filterPanel" class="card" style="display:none;">
+      <div class="row">
+        <h3 style="margin:0;">Filter by Chapter</h3>
+        <div class="spacer"></div>
+        <button id="filterSelectAll">Select All</button>
+        <button id="filterClear">Clear</button>
+        <button id="filterApply" class="primary">Apply Filter</button>
+      </div>
+      <div id="filterChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+      <div id="filterNote" class="muted" style="margin-top:6px;"></div>
+    </section>
+
+    <div id="quiz" class="card" style="margin-top:12px;display:none;">
       <div class="row" style="margin-bottom:6px;">
         <div id="chapter" class="badge"></div>
         <div class="spacer"></div>
         <div id="pos" class="badge"></div>
       </div>
-
       <div id="hint" class="muted" style="margin:0 0 6px 0;"></div>
       <div id="question"></div>
       <div id="options"></div>
-      <button id="submitMulti" class="blue">Submit answers</button>
-
-      <div id="feedback" style="display:none;margin-top:8px;padding:10px;border:1px solid #eee;border-radius:12px;"></div>
-
+      <div id="feedback"></div>
       <div class="row" style="margin-top:8px;">
         <button id="prev">◀ Prev</button>
         <button id="next">Next ▶</button>
         <div class="spacer"></div>
-        <span id="pct" class="muted">0%</span>
+        <span id="pct">0%</span>
       </div>
       <div class="progress" style="margin-top:8px;"><div class="bar" id="bar"></div></div>
     </div>
 
-    <!-- NEW: summary -->
-    <div id="summary" class="card" style="display:none;margin-top:10px;"></div>
+    <!-- Completion Card -->
+    <section id="completeCard" class="card" style="display:none;margin-top:12px;">
+      <h3 style="margin:0 0 8px 0;">All done 🎉</h3>
+      <div id="completeSummary" style="margin-bottom:10px;"></div>
+      <div class="row">
+        <button id="btnReviewWrong">Review Wrong Only</button>
+        <button id="btnRestart" class="primary">Restart</button>
+      </div>
+    </section>
+
+    <!-- Chapter Results Footer -->
+    <section id="resultsFooter" class="card" style="display:none;margin-top:12px;">
+      <div id="chapterChips" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </section>
+
   </div>
 
-  <script>
-  // PWA SW
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(()=>{});
-    });
-  }
+<script>
+// ---------- State ----------
+let allQuestions = [];      // full question objects
+let order = [];             // indices into allQuestions
+let answers = [];           // per-order position: number or [numbers]
+let idx = 0;
+let currentFileName = '';
+const STORAGE = 'csvquiz_multi_v1';
 
-  const STORE='csvquiz:pwa:v2';                // bumped for new features
-  const DATA_KEY=STORE+':csv';
-  const STATE_KEY=STORE+':state';
+// ---------- Utils & CSV ----------
+function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+function invertPerm(perm){ const inv=[]; perm.forEach((p,i)=>inv[p]=i); return inv; }
+function fixEncodingArtifacts(s){
+  if(s==null) return '';
+  let t=String(s);
+  t=t.replace(/\u00C2/g,'');
+  t=t.replace(/\u00A0/g,' ');
+  t=t.replace(/[\u2018\u2019]/g,"'");
+  t=t.replace(/[\u201C\u201D]/g,'"');
+  t=t.replace(/\u2013|\u2014/g,'-');
+  t=t.replace(/\s+/g,' ').trim();
+  return t;
+}
+function normalizeText(s){ return fixEncodingArtifacts(s).toLowerCase(); }
 
-  let allQuestions=[], order=[], answers=[], idx=0, currentFileName='';
-  let baseOrder=[];                             // preserves the current full order (for filtering)
-  let filter={chapter:'all', unanswered:false};
-
-  // utils
-  function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]] } return a }
-  function invertPerm(p){ const inv=[]; p.forEach((v,i)=>inv[v]=i); return inv }
-  function fix(s){ if(s==null)return''; let t=String(s);
-    t=t.replace(/\u00C2/g,'').replace(/\u00A0/g,' ').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"');
-    t=t.replace(/\u2013|\u2014/g,'-'); t=t.replace(/\s+/g,' ').trim(); return t }
-  function norm(s){ return fix(s).toLowerCase() }
-
-  function parseCSV(text){
-    const out=[]; let row=[],field='',q=false;
-    for(let i=0;i<text.length;i++){
-      const c=text[i];
-      if(q){ if(c=='"'){ if(text[i+1]=='"'){ field+='"'; i++ } else q=false } else field+=c }
-      else { if(c=='"') q=true; else if(c==','){ row.push(field); field='' }
-             else if(c=='\n'){ row.push(field); out.push(row); row=[]; field='' }
-             else if(c=='\r'){} else field+=c }
+// Small CSV parser (handles quotes, commas, newlines)
+function parseCSV(text){
+  const out=[]; let row=[]; let field=''; let q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){
+      if(c=='"'){
+        if(text[i+1]=='"'){ field+='"'; i++; }
+        else q=false;
+      }else field+=c;
+    }else{
+      if(c=='"') q=true;
+      else if(c==','){ row.push(field); field=''; }
+      else if(c=='\n'){ row.push(field); out.push(row); row=[]; field=''; }
+      else if(c=='\r'){ /* ignore */ }
+      else field+=c;
     }
-    row.push(field); out.push(row);
-    const headers=out.shift().map(h=>h.trim());
-    return out.filter(r=>r.some(x=>x&&String(x).trim().length)).map(r=>{
-      const o={}; headers.forEach((h,i)=>o[h]=r[i]??''); return o;
-    });
   }
+  row.push(field); out.push(row);
+  const headers = out.shift().map(h=>h.trim());
+  return out.filter(r=>r.some(x=>x && String(x).trim().length)).map(r=>{
+    const o={}; headers.forEach((h,i)=>o[h]=r[i]??''); return o;
+  });
+}
 
-  function readCorrect(row){
-    const k=Object.keys(row).reduce((m,k)=>(m[k.toLowerCase().trim()]=k,m),{});
-    return row[k['correct']]??row[k['correct ']]??row[k['answer']]??row[k['key']]??'';
+// ---------- Explanations & corrects ----------
+function readCorrect(row){
+  const k = Object.keys(row).reduce((m,k)=> (m[ k.toLowerCase().trim() ] = k, m), {});
+  return row[k['correct']] ?? row[k['answer']] ?? row[k['key']] ?? row[k['correct ']] ?? '';
+}
+function readCorrect2(row){
+  const k = Object.keys(row).reduce((m,k)=> (m[ k.toLowerCase().trim() ] = k, m), {});
+  return row[k['correct2']] ?? row[k['correct 2']] ?? row[k['answer2']] ?? row[k['key2']] ?? '';
+}
+
+function getOptionExplanations(row, n){
+  const keys = Object.keys(row);
+  const map = new Map(keys.map(k=>[k.toLowerCase().trim(), k]));
+  function pick(names){ for(const name of names){ const real=map.get(name.toLowerCase()); if(real) return fixEncodingArtifacts(row[real]||''); } return ''; }
+  let exps = [
+    pick(['explanation a','explanationa','exp a','expa','explanation_a']),
+    pick(['explanation b','explanationb','exp b','expb','explanation_b']),
+    pick(['explanation c','explanationc','exp c','expc','explanation_c']),
+    pick(['explanation d','explanationd','exp d','expd','explanation_d'])
+  ];
+  if(exps.every(x=>!x)){
+    const generic = keys.filter(k=>k.toLowerCase().startsWith('explanation'));
+    exps = generic.slice(0,n).map(k=>fixEncodingArtifacts(row[k]||''));
   }
-  function readCorrect2(row){
-    const k=Object.keys(row).reduce((m,k)=>(m[k.toLowerCase().trim()]=k,m),{});
-    return row[k['correct2']]??row[k['correct 2']]??row[k['answer2']]??row[k['key2']]??'';
+  while(exps.length<n) exps.push('');
+  return exps.slice(0,n);
+}
+
+function resolveCorrectIndexFromRow(row, optionTexts){
+  const raw = (readCorrect(row)||'').toString().trim();
+  const m = raw.match(/^[A-E]$/i);
+  if(m) return 'ABCDE'.indexOf(m[0].toUpperCase());
+  const norm = normalizeText(raw);
+  for(let i=0;i<optionTexts.length;i++) if(normalizeText(optionTexts[i])===norm) return i;
+  for(let i=0;i<optionTexts.length;i++) if(norm && normalizeText(optionTexts[i]).includes(norm)) return i;
+  return -1;
+}
+function resolveCorrectIndices(row, optionTexts){
+  const i1 = resolveCorrectIndexFromRow(row, optionTexts);
+  const raw2 = (readCorrect2(row)||'').toString().trim();
+  let i2 = -1;
+  if(raw2){
+    const m = raw2.match(/^[A-E]$/i);
+    if(m) i2 = 'ABCDE'.indexOf(m[0].toUpperCase());
+    if(i2<0){
+      const norm = normalizeText(raw2);
+      for(let i=0;i<optionTexts.length;i++) if(normalizeText(optionTexts[i])===norm){ i2=i; break; }
+      if(i2<0) for(let i=0;i<optionTexts.length;i++) if(norm && normalizeText(optionTexts[i]).includes(norm)){ i2=i; break; }
+    }
   }
-  function getExps(row,n){
-    const keys=Object.keys(row);
-    const map=new Map(keys.map(k=>[k.toLowerCase().trim(),k]));
-    function pick(names){ for(const name of names){ const real=map.get(name.toLowerCase()); if(real) return fix(row[real]||'') } return '' }
-    let e=[pick(['explanation a','explanationa','exp a','expa','explanation_a']),
-           pick(['explanation b','explanationb','exp b','expb','explanation_b']),
-           pick(['explanation c','explanationc','exp c','expc','explanation_c']),
-           pick(['explanation d','explanationd','exp d','expd','explanation_d'])];
-    if(e.every(x=>!x)){ const generic=keys.filter(k=>k.toLowerCase().startsWith('explanation')); e=generic.slice(0,n).map(k=>fix(row[k]||'')) }
-    while(e.length<n) e.push('');
-    return e.slice(0,n);
+  const arr=[]; if(i1>=0) arr.push(i1); if(i2>=0 && i2!==i1) arr.push(i2);
+  return arr;
+}
+function isAnswerCorrect(q, ans){
+  if(ans===undefined) return false;
+  if(Array.isArray(q.correctIdxes)){
+    const need = q.correctIdxes.slice().sort((a,b)=>a-b);
+    const got = (Array.isArray(ans)?ans:[ans]).slice().sort((a,b)=>a-b);
+    if(need.length!==got.length) return false;
+    for(let i=0;i<need.length;i++) if(need[i]!==got[i]) return false;
+    return true;
   }
-  function resolveIndex(raw,opts){
-    raw=fix(raw); if(!raw) return -1;
-    const m=raw.match(/^[A-E]$/i); if(m) return 'ABCDE'.indexOf(m[0].toUpperCase());
-    const want=norm(raw);
-    for(let i=0;i<opts.length;i++) if(norm(opts[i])===want) return i;
-    for(let i=0;i<opts.length;i++) if(want && norm(opts[i]).includes(want)) return i;
-    return -1;
-  }
+  return (q.correctIdx>=0 && ans===q.correctIdx);
+}
 
-  function buildQuestions(rows){
-    return rows.map(r=>{
-      const choices=['A','B','C','D','E'].map(L=>{
-        const low=L.toLowerCase();
-        const val=(r[L]!=null?r[L]:(r[low]!=null?r[low]:'')); return {label:L,text:fix(String(val))}
-      }).filter(o=>o.text.length);
+// ---------- Build questions ----------
+function buildQuestions(rows){
+  return rows.map(r => {
+    const choices = ['A','B','C','D','E'].map(L => ({
+      label:L, text: fixEncodingArtifacts((r[L]??r[L?.toLowerCase?.()]??'').toString())
+    })).filter(o=>o.text.length);
 
-      const optionTexts=choices.map(c=>c.text);
-      const i1=resolveIndex(readCorrect(r),optionTexts), i2=resolveIndex(readCorrect2(r),optionTexts);
-      const origIdxes=[]; if(i1>=0) origIdxes.push(i1); if(i2>=0&&i2!=i1) origIdxes.push(i2);
+    const optionTexts = choices.map(c=>c.text);
+    const origIdxes = resolveCorrectIndices(r, optionTexts); // 1 or 2
 
-      const perm=shuffle([...Array(choices.length).keys()]); const inv=invertPerm(perm);
-      const options=perm.map(i=>choices[i].text);
-      const correctIdxes=origIdxes.map(i=>perm.indexOf(i)).filter(i=>i>=0);
+    const perm = shuffle([...Array(choices.length).keys()]);
+    const inv = invertPerm(perm);
+    const options = perm.map(i=>choices[i].text);
+    const correctIdxes = origIdxes.map(i=>perm.indexOf(i)).filter(i=>i>=0);
 
-      return {
-        chapter:fix(r.chapter||r.Chapter||''),
-        question:fix(r.question||r.Question||''),
-        options,
-        originalOptions:optionTexts,
-        perm, inv,
-        exps:getExps(r,choices.length),
-        originalCorrectIdx:(origIdxes[0]??-1),
-        correctIdx:(correctIdxes[0]??-1),
-        correctIdxes,
-        requiredCount:(correctIdxes.length||1)
-      };
-    }).filter(q=>q.question&&q.options.length);
-  }
+    return {
+      chapter: fixEncodingArtifacts(r.chapter || r.Chapter || ''),
+      question: fixEncodingArtifacts(r.question || r.Question || ''),
+      options,
+      originalOptions: optionTexts,
+      perm, inv,
+      exps: getOptionExplanations(r, choices.length),
+      // single-answer legacy fields
+      originalCorrectIdx: origIdxes[0] ?? -1,
+      correctIdx: correctIdxes[0] ?? -1,
+      // multi-answer
+      correctIdxes,
+      requiredCount: correctIdxes.length || 1
+    };
+  }).filter(q => q.question && q.options.length);
+}
 
-  function saveState(){
-    try{
-      const state={idx,order,answers,fileName:currentFileName,filter,baseOrder};
-      localStorage.setItem(STATE_KEY,JSON.stringify(state));
-    }catch(_){}
-  }
-  function saveCSVText(name,text){
-    try{ localStorage.setItem(DATA_KEY,JSON.stringify({name,text})) }catch(_){}
-  }
+// ---------- Render ----------
+function updateProgress(){
+  const p = Math.round(100 * (answers.filter(a=>a!==undefined).length) / (order.length||1));
+  document.getElementById('pct').textContent = (order.length? p:0) + '%';
+  document.getElementById('bar').style.width = p + '%';
+}
+function computeChapterStats(){
+  const stats = new Map();
+  order.forEach((qIdx, pos) => {
+    const q = allQuestions[qIdx];
+    const ch = q.chapter || '—';
+    if(!stats.has(ch)) stats.set(ch, {correct:0,total:0});
+    const s = stats.get(ch);
+    s.total += 1;
+    if(isAnswerCorrect(q, answers[pos])) s.correct += 1;
+  });
+  return stats;
+}
+function classForPct(p){ if(p>=90) return 'green'; if(p>=50) return 'yellow'; return 'red'; }
+function renderChapterChips(){
+  const footer = document.getElementById('resultsFooter');
+  const wrap = document.getElementById('chapterChips');
+  if(!footer||!wrap){ return; }
+  if(!order.length){ footer.style.display='none'; return; }
+  const stats = computeChapterStats();
+  wrap.innerHTML='';
+  [...stats.keys()].sort((a,b)=>(a||'').localeCompare(b||'')).forEach(ch => {
+    const {correct,total} = stats.get(ch);
+    const p = total? Math.round(100*correct/total) : 0;
+    const el = document.createElement('span');
+    el.className = 'chip ' + classForPct(p);
+    el.innerHTML = `<strong>${ch}</strong> ${correct}/${total} (${p}%)`;
+    wrap.appendChild(el);
+  });
+  footer.style.display='block';
+}
+function maybeShowCompleteCard(){
+  const card = document.getElementById('completeCard');
+  const sum = document.getElementById('completeSummary');
+  if(!card||!sum) return;
+  const done = answers.filter(a=>a!==undefined).length === order.length && order.length>0;
+  if(!done){ card.style.display='none'; return; }
+  let c=0; order.forEach((qIdx,pos)=>{ if(isAnswerCorrect(allQuestions[qIdx], answers[pos])) c++; });
+  const p = Math.round(100 * c / order.length);
+  sum.textContent = `You answered ${c} out of ${order.length} correctly (${p}%).`;
+  card.style.display='block';
+}
 
-  function tryResume(){
-    try{
-      const rawCSV=localStorage.getItem(DATA_KEY);
-      const rawState=localStorage.getItem(STATE_KEY);
-      if(!rawCSV||!rawState) return false;
+function render(){
+  const has = order.length>0;
+  document.getElementById('quiz').style.display = has? 'block':'none';
+  if(!has){ updateProgress(); renderChapterChips(); return; }
 
-      const {name,text}=JSON.parse(rawCSV);
-      const st=JSON.parse(rawState);
+  const q = allQuestions[order[idx]];
+  document.getElementById('chapter').textContent = q.chapter || '—';
+  document.getElementById('pos').textContent = `${idx+1} / ${order.length}`;
+  document.getElementById('question').textContent = q.question;
+  const need = q.requiredCount || 1;
+  document.getElementById('hint').textContent = (need>1? `Select ${need} answers` : '');
 
-      const rows=parseCSV(text);
-      allQuestions=buildQuestions(rows);
+  const opts = document.getElementById('options'); opts.innerHTML='';
+  q.options.forEach((txt, i) => {
+    const div = document.createElement('div');
+    div.className = 'opt option';
+    div.textContent = `${String.fromCharCode(65+i)}) ${txt}`;
+    div.onclick = () => choose(i);
+    opts.appendChild(div);
+  });
 
-      baseOrder = Array.isArray(st.baseOrder) ? st.baseOrder.filter(i=>i>=0 && i<allQuestions.length) : [...Array(allQuestions.length).keys()];
-      order     = Array.isArray(st.order)     ? st.order.filter(i=>i>=0 && i<allQuestions.length)     : baseOrder.slice();
-
-      answers=Array.isArray(st.answers)?st.answers.slice(0,allQuestions.length):Array(allQuestions.length).fill(undefined);
-      idx=Math.min(Math.max(0,st.idx|0),Math.max(0,order.length-1));
-      currentFileName=name||'Saved CSV';
-      filter = st.filter || {chapter:'all', unanswered:false};
-
-      document.getElementById('status').textContent=`Resumed from "${currentFileName}".`;
-      document.getElementById('quiz').style.display='block';
-      initFiltersUI();      // NEW
-      setFilterControlsFromState(); // NEW
-      recomputeOrderFromFilters();  // NEW (derives order view)
-      render();
-      return true;
-    }catch(e){ console.warn('resume failed',e); return false }
-  }
-
-  function updateProgress(){
-    const p=Math.round(100*(answers.filter(a=>a!==undefined).length)/(order.length||1));
-    document.getElementById('pct').textContent=p+'%';
-    document.getElementById('bar').style.width=p+'%';
-    saveState();
-  }
-
-  function render(){
-    const has=order.length>0;
-    const qwrap=document.getElementById('quiz');
-    qwrap.style.display=has?'block':'none';
-    if(!has){ updateProgress(); renderSummary(); return }
-
-    const q=allQuestions[order[idx]];
-    document.getElementById('chapter').textContent=(q.chapter||'—');
-    document.getElementById('pos').textContent=`${idx+1} / ${order.length}`;
-    document.getElementById('question').textContent=q.question;
-
-    const need=q.requiredCount||1;
-    document.getElementById('hint').textContent=(need>1?`Select ${need} answers`:'' );
-
-    const opts=document.getElementById('options'); opts.innerHTML='';
-    const btnSubmit=document.getElementById('submitMulti');
-    btnSubmit.style.display=(need>1&&answers[order[idx]]===undefined)?'inline-block':'none';
-    btnSubmit.disabled=true;
-
-    const fb=document.getElementById('feedback'); fb.style.display='none'; fb.innerHTML='';
-
-    q.options.forEach((txt,i)=>{
-      const div=document.createElement('div');
-      div.className='opt option';
-      div.innerHTML=`${String.fromCharCode(65+i)}) ${txt}`;
-
-      const ans = answers[order[idx]];
-
-      if(ans!==undefined){
-        div.classList.add('disabled');
-        if(need===1){
-          if(i===q.correctIdx) div.classList.add('correct');
-          if(i===ans && i!==q.correctIdx) div.classList.add('incorrect');
-        }else{
-          const sel=Array.isArray(ans)?ans:[ans];
-          const set=new Set(q.correctIdxes);
-          if(sel.includes(i)&&set.has(i)) div.classList.add('correct');
-          else if(sel.includes(i)&&!set.has(i)) div.classList.add('incorrect');
-          else if(set.has(i)) div.classList.add('correct-faint');
-        }
-      }else{
-        if(need===1){ div.onclick=()=>gradeSingle(i) }
-        else{ div.onclick=()=>toggleMulti(i) }
-      }
-      opts.appendChild(div);
-    });
-
-    function gradeSingle(i){
-      answers[order[idx]]=i;
-      document.querySelectorAll('#options .option').forEach((el,j)=>{
+  // if already answered, style it
+  const a = answers[idx];
+  if(a !== undefined){
+    if(need===1){
+      const i = a;
+      document.querySelectorAll('#options .option').forEach((el, j) => {
         el.classList.add('disabled');
         if(j===q.correctIdx) el.classList.add('correct');
         if(j===i && i!==q.correctIdx) el.classList.add('incorrect');
       });
-
-      if(q.exps){
-        const origChosen=(q.perm&&q.perm[i]!=null)?q.perm[i]:i;
-        const expChosen=q.exps[origChosen]||'';
-        const expCorrect=(q.originalCorrectIdx>=0)?(q.exps[q.originalCorrectIdx]||''):'';
-        let out='';
-        if(expChosen) out+=`<div><strong>Your choice:</strong> ${expChosen}</div>`;
-        if(q.correctIdx>=0&&i!==q.correctIdx&&expCorrect) out+=`<div style="margin-top:6px;"><strong>Correct answer note:</strong> ${expCorrect}</div>`;
-        fb.innerHTML=out; fb.style.display=out?'block':'none';
-      }
-      updateProgress();
-      renderSummary(); // NEW
-    }
-
-    function toggleMulti(i){
-      const items=[...document.querySelectorAll('#options .option')];
-      if(items[i].classList.contains('selected')){
-        items[i].classList.remove('selected');
-      }else{
-        const selected=items.filter(el=>el.classList.contains('selected')).length;
-        if(selected>=need){
-          for(const el of items){ if(el.classList.contains('selected')){ el.classList.remove('selected'); break } }
-        }
-        items[i].classList.add('selected');
-      }
-      const selectedNow=items.filter(el=>el.classList.contains('selected')).map((el,idx2)=>idx2);
-      btnSubmit.disabled=(selectedNow.length!==need);
-    }
-
-    btnSubmit.onclick=()=>{
-      const items=[...document.querySelectorAll('#options .option')];
-      const sel=items.map((el,i)=>el.classList.contains('selected')?i:-1).filter(i=>i>=0).sort((a,b)=>a-b);
-      if(sel.length!==need) return;
-
-      answers[order[idx]]=sel.slice();
-      const set=new Set(q.correctIdxes);
-
-      items.forEach((el,j)=>{
+    }else{
+      const sel = Array.isArray(a) ? a : [a];
+      const needSet = new Set(q.correctIdxes);
+      document.querySelectorAll('#options .option').forEach((el, j) => {
         el.classList.add('disabled');
-        if(sel.includes(j)&&set.has(j)) el.classList.add('correct');
-        else if(sel.includes(j)&&!set.has(j)) el.classList.add('incorrect');
-        else if(set.has(j)) el.classList.add('correct-faint');
-        el.classList.remove('selected');
+        if(sel.includes(j) && needSet.has(j)) el.classList.add('correct');
+        else if(sel.includes(j) && !needSet.has(j)) el.classList.add('incorrect');
+        else if(needSet.has(j)) el.classList.add('correct-faint');
       });
+    }
+  }else{
+    const fbEl=document.getElementById('feedback'); if(fbEl) fbEl.style.display='none';
+  }
 
+  updateProgress();
+  renderChapterChips();
+  maybeShowCompleteCard();
+}
+
+// ---------- Interactions ----------
+window._multiSel = {};
+
+function choose(i){
+  const q = allQuestions[order[idx]];
+  const need = q.requiredCount || 1;
+
+  if(answers[idx] !== undefined) return;
+
+  if(need === 1){
+    answers[idx] = i;
+    document.querySelectorAll('#options .option').forEach((el, j) => {
+      el.classList.add('disabled');
+      if(j===q.correctIdx) el.classList.add('correct');
+      if(j===i && i!==q.correctIdx) el.classList.add('incorrect');
+    });
+    const fb = document.getElementById('feedback');
+    if(fb && q && q.exps){
+      const origChosen = (q.perm && q.perm[i] !== undefined) ? q.perm[i] : i;
+      const expChosen = q.exps[origChosen] || '';
+      const expCorrect = (q.originalCorrectIdx>=0) ? (q.exps[q.originalCorrectIdx] || '') : '';
       let out='';
-      if(q.exps){
-        sel.forEach(ch=>{
-          const orig=(q.perm&&q.perm[ch]!=null)?q.perm[ch]:ch;
-          const e=q.exps[orig]||'';
-          if(e) out+=`<div><strong>Your choice (${String.fromCharCode(65+ch)}):</strong> ${e}</div>`;
-        });
-        const missing=q.correctIdxes.filter(c=>!sel.includes(c));
-        missing.forEach(c=>{
-          const orig=(q.perm&&q.perm[c]!=null)?q.perm[c]:c;
-          const e=q.exps[orig]||'';
-          out+=`<div style="margin-top:6px;"><strong>Correct (${String.fromCharCode(65+c)}):</strong> ${e||'(no note)'}</div>`;
-        });
-      }
-      fb.innerHTML=out; fb.style.display=out?'block':'none';
-      btnSubmit.style.display='none';
-
-      updateProgress();
-      renderSummary(); // NEW
-    };
-
-    renderSummary(); // NEW (keeps summary visible/hidden as you move)
-  }
-
-  // NEW: filter + summary helpers
-  function uniqueChapters(){
-    const set=new Set(allQuestions.map(q => q.chapter && q.chapter.trim() ? q.chapter.trim() : '—'));
-    return ['All chapters', ...[...set].sort()];
-  }
-  function initFiltersUI(){
-    const wrap=document.getElementById('filters');
-    const sel=document.getElementById('chapterFilter');
-    const chk=document.getElementById('unansweredOnly');
-
-    sel.innerHTML = uniqueChapters().map((c,i)=>`<option value="${i===0?'all':c}">${c}</option>`).join('');
-    sel.onchange = ()=>{ filter.chapter = sel.value; recomputeOrderFromFilters(); };
-    chk.onchange = ()=>{ filter.unanswered = chk.checked; recomputeOrderFromFilters(); };
-    wrap.style.display='flex';
-  }
-  function setFilterControlsFromState(){
-    const sel=document.getElementById('chapterFilter');
-    const chk=document.getElementById('unansweredOnly');
-    if(sel){ sel.value = filter.chapter; }
-    if(chk){ chk.checked = filter.unanswered; }
-  }
-  function recomputeOrderFromFilters(){
-    let next = baseOrder.filter(i=>{
-      const q=allQuestions[i];
-      const chap = q.chapter && q.chapter.trim() ? q.chapter.trim() : '—';
-      const byChap = (filter.chapter==='all') || (chap===filter.chapter);
-      const byUnans = !filter.unanswered || answers[i]===undefined;
-      return byChap && byUnans;
-    });
-    order = next;
-    idx = Math.min(idx, Math.max(0, order.length-1));
-    render();
-    saveState();
-  }
-  function answersComplete(){
-    return order.length>0 && order.every(i => answers[i] !== undefined);
-  }
-  function renderSummary(){
-    const box=document.getElementById('summary');
-    if(!answersComplete()){ box.style.display='none'; box.innerHTML=''; return; }
-
-    let overallTotal=0, overallCorrect=0;
-    const byChap=new Map();
-
-    function isCorrect(i){
-      const q=allQuestions[i]; const a=answers[i];
-      if(q.requiredCount===1){ return a===q.correctIdx; }
-      const need=new Set(q.correctIdxes), got=new Set(Array.isArray(a)?a:[]);
-      if(need.size!==got.size) return false;
-      for(const v of need) if(!got.has(v)) return false;
-      return true;
+      if(expChosen) out += `<div><strong>Your choice:</strong> ${expChosen}</div>`;
+      if(q.correctIdx>=0 && i!==q.correctIdx && expCorrect) out += `<div style="margin-top:6px;"><strong>Correct answer note:</strong> ${expCorrect}</div>`;
+      if(out){ fb.innerHTML=out; fb.style.display='block'; } else fb.style.display='none';
     }
+    updateProgress(); renderChapterChips(); maybeShowCompleteCard();
+    return;
+  }
 
-    order.forEach(i=>{
-      const q=allQuestions[i];
-      const chap=(q.chapter && q.chapter.trim())?q.chapter.trim():'—';
-      const ok=isCorrect(i);
-      overallTotal++; if(ok) overallCorrect++;
-      const rec=byChap.get(chap)||{total:0,correct:0};
-      rec.total++; if(ok) rec.correct++;
-      byChap.set(chap,rec);
+  // multi
+  const key = String(order[idx]);
+  const sel = (_multiSel[key] = (_multiSel[key] || []));
+  const p = sel.indexOf(i);
+  if(p>=0) sel.splice(p,1); else sel.push(i);
+
+  document.querySelectorAll('#options .option').forEach((el, j) => {
+    if(sel.includes(j)) el.classList.add('selected'); else el.classList.remove('selected');
+  });
+  if(sel.length < need) return;
+
+  sel.sort((a,b)=>a-b);
+  answers[idx] = sel.slice();
+
+  const needSet = new Set(q.correctIdxes);
+  document.querySelectorAll('#options .option').forEach((el, j) => {
+    el.classList.remove('selected');
+    el.classList.add('disabled');
+    if(sel.includes(j) && needSet.has(j)) el.classList.add('correct');
+    else if(sel.includes(j) && !needSet.has(j)) el.classList.add('incorrect');
+    else if(needSet.has(j)) el.classList.add('correct-faint');
+  });
+
+  const fb = document.getElementById('feedback');
+  let out='';
+  if(q.exps){
+    sel.forEach(ch => {
+      const orig = (q.perm && q.perm[ch] !== undefined) ? q.perm[ch] : ch;
+      const e = q.exps[orig] || '';
+      if(e) out += `<div><strong>Your choice (${String.fromCharCode(65+ch)}):</strong> ${e}</div>`;
     });
-
-    const pct=Math.round(100*overallCorrect/Math.max(1,overallTotal));
-    let html=`<h3 style="margin:0 0 8px 0;">Summary</h3>
-      <div class="muted" style="margin-bottom:8px;">${overallCorrect}/${overallTotal} correct • ${pct}%</div>
-      <div class="progress" style="margin-bottom:10px;"><div class="bar" style="width:${pct}%;"></div></div>
-      <div style="display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;">
-        <div class="muted">Chapter</div><div class="muted">Score</div><div class="muted">% </div>`;
-
-    [...byChap.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([chap,rec])=>{
-      const p=Math.round(100*rec.correct/Math.max(1,rec.total));
-      html+=`<div>${chap}</div><div>${rec.correct}/${rec.total}</div><div>${p}%</div>`;
-    });
-    html+=`</div>
-      <div class="row" style="margin-top:10px;">
-        <button id="reviewWrong">Review missed only</button>
-        <div class="spacer"></div>
-        <button id="restartAll" class="blue">Restart</button>
-      </div>`;
-
-    box.innerHTML=html;
-    box.style.display='block';
-
-    document.getElementById('reviewWrong').onclick=()=>{
-      // new view = only incorrect from current view
-      const wrong = order.filter(i=>{
-        const a=answers[i]; const q=allQuestions[i];
-        if(q.requiredCount===1) return a!==q.correctIdx;
-        const need=new Set(q.correctIdxes), got=new Set(Array.isArray(a)?a:[]);
-        if(need.size!==got.size) return true;
-        for(const v of need) if(!got.has(v)) return true;
-        return false;
+    const missing = q.correctIdxes.filter(c => !sel.includes(c));
+    if(missing.length){
+      missing.forEach(c => {
+        const orig = (q.perm && q.perm[c] !== undefined) ? q.perm[c] : c;
+        const e = q.exps[orig] || '';
+        out += `<div style="margin-top:6px;"><strong>Correct (${String.fromCharCode(65+c)}):</strong> ${e || '(no note)'}</div>`;
       });
-      order = wrong;
-      idx=0;
-      document.getElementById('unansweredOnly').checked=false;
-      filter.unanswered=false;
-      render();
-      saveState();
-      box.style.display='none';
-    };
-
-    document.getElementById('restartAll').onclick=()=>{
-      answers = Array(allQuestions.length).fill(undefined);
-      order   = baseOrder.slice();
-      idx=0;
-      filter={chapter:'all', unanswered:false};
-      setFilterControlsFromState();
-      render();
-      saveState();
-      box.style.display='none';
-    };
-  }
-
-  // nav
-  document.getElementById('prev').onclick=()=>{ if(idx>0){ idx--; render(); saveState(); } };
-  document.getElementById('next').onclick=()=>{ if(idx<order.length-1){ idx++; render(); saveState(); } };
-  document.getElementById('reset').onclick=()=>{ answers=Array(allQuestions.length).fill(undefined); idx=0; render(); saveState(); };
-  document.getElementById('hard').onclick=()=>{ localStorage.removeItem(DATA_KEY); localStorage.removeItem(STATE_KEY); location.reload(); };
-  document.getElementById('shuffleQs').onclick=()=>{
-    baseOrder = shuffle(baseOrder.slice());
-    order = baseOrder.slice();
-    answers=Array(allQuestions.length).fill(undefined);
-    idx=0; render(); saveState();
-  };
-
-  // file load
-  document.getElementById('file').onchange=async(e)=>{
-    try{
-      const f=e.target.files[0]; if(!f) return;
-      const text=await f.text();
-      saveCSVText(f.name,text);
-
-      const rows=parseCSV(text);
-      allQuestions=buildQuestions(rows);
-
-      baseOrder=[...Array(allQuestions.length).keys()];
-      order=baseOrder.slice();
-      answers=Array(allQuestions.length).fill(undefined);
-      idx=0; currentFileName=f.name;
-
-      document.getElementById('status').textContent=`Loaded ${allQuestions.length} questions from "${f.name}".`;
-      document.getElementById('quiz').style.display='block';
-
-      initFiltersUI();
-      setFilterControlsFromState();
-      recomputeOrderFromFilters(); // applies current filter (defaults to all)
-      render();
-      saveState();
-    }catch(err){
-      document.getElementById('warning').textContent='Error loading CSV: '+(err&&err.message?err.message:err);
     }
-  };
-
-  // boot
-  if(!tryResume()){
-    document.getElementById('status').textContent='Load a CSV to begin. (Progress autosaves offline.)';
   }
-  </script>
+  if(fb){ fb.innerHTML = out; fb.style.display = out ? 'block' : 'none'; }
+
+  updateProgress(); renderChapterChips(); maybeShowCompleteCard();
+}
+
+// ---------- Filter UI ----------
+const FILTER_KEY = STORAGE + ':chapters';
+
+function uniqueChapters(list){ const s=new Set(list.map(x=>(x||'').toString())); return Array.from(s).sort((a,b)=>(a||'').localeCompare(b||'')); }
+function buildChapterChips(){
+  const cont = document.getElementById('filterChips'); if(!cont) return;
+  cont.innerHTML='';
+  const chapters = uniqueChapters(allQuestions.map(q=>q.chapter||'—'));
+  let selected = [];
+  try{ selected = JSON.parse(localStorage.getItem(FILTER_KEY) || '[]'); }catch(_){}
+  if(!selected.length) selected = chapters.slice();
+  chapters.forEach(ch => {
+    const id = 'chk_' + btoa(unescape(encodeURIComponent(ch))).replace(/=+$/,'');
+    const el = document.createElement('label');
+    el.className = 'chkchip';
+    el.innerHTML = `<input type="checkbox" id="${id}" ${selected.includes(ch)?'checked':''}> <span>${ch}</span>`;
+    cont.appendChild(el);
+  });
+  const note = document.getElementById('filterNote'); if(note) note.textContent = `(${chapters.length} chapters found)`;
+}
+function getSelectedChapters(){
+  return Array.from(document.querySelectorAll('#filterChips input[type="checkbox"]'))
+    .filter(cb=>cb.checked).map(cb=>cb.nextElementSibling.textContent);
+}
+function applyChapterFilter(){
+  const sel = getSelectedChapters();
+  try{ localStorage.setItem(FILTER_KEY, JSON.stringify(sel)); }catch(_){}
+  const newOrder=[];
+  allQuestions.forEach((q,i)=>{ const ch=q.chapter||'—'; if(!sel.length || sel.includes(ch)) newOrder.push(i); });
+  order = newOrder; answers = Array(order.length).fill(undefined); idx=0;
+  document.getElementById('status').textContent = `Showing ${order.length} of ${allQuestions.length} questions (filtered).`;
+  render(); renderChapterChips(); maybeShowCompleteCard();
+}
+function initFilter(){
+  document.getElementById('toggleFilter').onclick = () => {
+    const p = document.getElementById('filterPanel');
+    p.style.display = (p.style.display==='none' || !p.style.display) ? 'block' : 'none';
+    if(p.style.display==='block') buildChapterChips();
+  };
+  document.getElementById('filterSelectAll').onclick = () => { buildChapterChips(); document.querySelectorAll('#filterChips input').forEach(cb=>cb.checked=true); };
+  document.getElementById('filterClear').onclick = () => { document.querySelectorAll('#filterChips input').forEach(cb=>cb.checked=false); };
+  document.getElementById('filterApply').onclick = () => applyChapterFilter();
+}
+
+// ---------- Completion actions ----------
+document.getElementById('btnRestart').onclick = () => { answers = Array(order.length).fill(undefined); idx=0; render(); renderChapterChips(); maybeShowCompleteCard(); };
+document.getElementById('btnReviewWrong').onclick = () => {
+  const newOrder=[];
+  order.forEach((qIdx,pos)=>{ if(!isAnswerCorrect(allQuestions[qIdx], answers[pos])) newOrder.push(qIdx); });
+  order = newOrder; answers = Array(order.length).fill(undefined); idx=0;
+  render(); renderChapterChips(); maybeShowCompleteCard();
+};
+
+// ---------- Navigation & controls ----------
+document.getElementById('prev').onclick = () => { if(idx>0){ idx--; render(); } };
+document.getElementById('next').onclick = () => { if(idx<order.length-1){ idx++; render(); } };
+
+document.getElementById('shuffleQs').onclick = () => {
+  const prev = order[idx];
+  order = shuffle([...order]);
+  answers = Array(order.length).fill(undefined);
+  idx = 0;
+  if(order.length>1 && order[0]===prev) idx = 1;
+  render(); renderChapterChips(); maybeShowCompleteCard();
+  const fbEl=document.getElementById('feedback'); if(fbEl) fbEl.style.display='none';
+};
+document.getElementById('shuffleBoth').onclick = () => {
+  // rebuild with fresh per-question option permutations
+  allQuestions = buildQuestions(allQuestions.map(q => {
+    // map current shuffled correctIdxes back to original via inverse permutation
+    const inv = q.inv || (function(){ const ii=[]; (q.perm||[]).forEach((p,i)=>ii[p]=i); return ii; })();
+    const orig1 = (Array.isArray(q.correctIdxes) && q.correctIdxes.length>=1) ? inv[q.correctIdxes[0]] : (q.originalCorrectIdx>=0 ? q.originalCorrectIdx : -1);
+    const orig2 = (Array.isArray(q.correctIdxes) && q.correctIdxes.length>=2) ? inv[q.correctIdxes[1]] : -1;
+    return {
+      chapter:q.chapter, question:q.question,
+      A:q.originalOptions[0]||'', B:q.originalOptions[1]||'',
+      C:q.originalOptions[2]||'', D:q.originalOptions[3]||'', E:q.originalOptions[4]||'',
+      correct: (orig1>=0? 'ABCDE'[orig1] : ''),
+      correct2: (orig2>=0? 'ABCDE'[orig2] : '')
+    };
+  }));
+  order = shuffle([...Array(allQuestions.length).keys()]);
+  answers = Array(order.length).fill(undefined); idx=0;
+  render(); renderChapterChips(); maybeShowCompleteCard();
+  buildChapterChips();
+};
+document.getElementById('reset').onclick = () => { answers = Array(order.length).fill(undefined); idx=0; render(); renderChapterChips(); maybeShowCompleteCard(); };
+document.getElementById('hard').onclick = () => { localStorage.clear(); location.reload(); };
+
+// ---------- File load ----------
+document.getElementById('file').onchange = async (e) => {
+  const file = e.target.files[0]; if(!file) return;
+  currentFileName = file.name;
+  const text = await file.text();
+  const rows = parseCSV(text);
+  const warn = document.getElementById('warning'); warn.textContent = '';
+
+  allQuestions = buildQuestions(rows);
+  let bad=0; rows.forEach((r,i)=>{
+    const choices=['A','B','C','D','E'].map(L=>(r[L]||'').toString().trim()).filter(x=>x);
+    const idxes = resolveCorrectIndices(r, choices);
+    if(!idxes.length) bad++;
+  });
+  if(bad>0) warn.textContent = `⚠ ${bad} with missing/invalid correct key`;
+
+  order = [...Array(allQuestions.length).keys()];
+  answers = Array(order.length).fill(undefined);
+  idx=0;
+  document.getElementById('status').textContent = `Loaded ${allQuestions.length} questions from "${file.name}".`;
+  document.getElementById('quiz').style.display='block';
+  buildChapterChips();
+  render();
+};
+
+// init
+initFilter();
+</script>
 </body>
 </html>
